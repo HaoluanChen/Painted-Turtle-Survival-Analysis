@@ -171,6 +171,7 @@ My final model does not use any imputation methods. However, I did sensitivity t
 ```{r include=FALSE}
 model$results
 ```
+
 ```{r echo=FALSE}
 coefficient <- c("Phi.(Intercept)","Phi.sexMale","Phi.sexUnknown","p.(Intercept)","p.sexMale","p.sexUnknown")
 Estimate <- c(3.7025814, -0.6943481, -3.4392258, 1.2086133, -0.2454782, -0.5087132)
