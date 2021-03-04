@@ -64,7 +64,6 @@ data2 <- data2 %>% filter(!is.na(midpl))
 midpl <- data2 %>% group_by(notch) %>% spread(Year, midpl)
 midpl <- full_join(midpl, datawithcapyear, by = "notch") %>% filter(!is.na(firstcapyear))
 
-
 # imputation
 year = 1991
 column = 5

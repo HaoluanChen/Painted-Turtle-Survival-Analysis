@@ -29,8 +29,13 @@ data1 <- data %>%
          | site == "Wolf Howl Pond" | site == "Wolf Howl Pond E." 
          | site == "Road to Wrose" | site == "West Rose" 
          | site == "March Hare Lake" | site == "Wolf Howl Pond e.") %>% 
-  mutate(site = ifelse(site == "Wolf Howl Pond e.","Wolf Howl Pond E.", site ))
-
+  mutate(site = ifelse(site == "Wolf Howl Pond e.","Wolf Howl Pond E.", site )) %>% 
+  mutate(site = ifelse(site =="Road to WHP" |site == "Blanding's Bog",
+                       "Road to WHP & Blanding's Bog", site)) %>% 
+  mutate(site = ifelse(site == "Wolf Howl Pond E." | site == "Wolf Howl Pond", 
+                       "Wolf Howl Pond & Wolf Howl Pond E.", site)) %>% 
+  mutate(site = ifelse(site == "Road to Wrose"|site == "West Rose"|site == "March Hare Lake",
+                      "Road to Wrose & West Rose & March Hare Lake", site))
 data1 <- data1 %>% 
   mutate(mature = ifelse(sex == "Male" & pl > 9, TRUE, FALSE),
          mature = ifelse(sex == "Female" & pl > 12, TRUE, FALSE),
@@ -49,7 +54,7 @@ history <-  turtles %>% mutate(capture = 1) %>%
   summarise(ch = paste(capture,collapse = ""))
 
 
-## Data Manupliation and Transformation
+## Data Manipulation and Transformation
 datacov <- data1 %>% select(notch, Year, sex, midpl, dead) # select wanted variables
 datawithcapyear <- data1 %>% select(notch, firstcapyear) %>% filter(firstcapyear != 0)
 
@@ -84,7 +89,6 @@ for(c in column:31) {
   year = year + 1 
 
 }
-midpl
 
 # renaming the columns
 midpl <- rename(midpl, c("midpl1" = "1991", "midpl2" = "1992", "midpl3" = "1993", "midpl4" = "1994", "midpl5" = "1995", "midpl6" = "1996", "midpl7" = "1997", "midpl8" = "1998", "midpl9" = "1999", "midpl10" = "2000", "midpl11" = "2001", "midpl12" = "2002", "midpl13" = "2003", "midpl14" = "2004", "midpl15" = "2005", "midpl16" = "2006", "midpl17" = "2007", "midpl18" = "2008", "midpl19" = "2009", "midpl20" = "2010", "midpl21" = "2011", "midpl22" = "2012", "midpl23" = "2013", "midpl24" = "2014", "midpl25" = "2015","midpl26" = "2016", "midpl27" = "2017"))
@@ -98,30 +102,28 @@ turtles.proc = process.data(midpl)
 turtles.proc
 
  # Create design data with static and time varying covariates
-design.Phi=list(static=c("sex"))
+design.Phi=list(time.varying=c("midpl"))
 design.p=list(static=c("sex")) 
 
  design.parameters=list(Phi=design.Phi,p=design.p)
  ddl=make.design.data(turtles.proc,parameters=design.parameters) 
- names(ddl$Phi)
- names(ddl$p)
  
-Phi.sfw=list(formula=~sex)
+Phi.sfw=list(formula=~midpl)
 p.ast=list(formula=~sex)
 model=crm(turtles.proc,ddl,hessian=TRUE,model.parameters=list(Phi=Phi.sfw,p=p.ast))
 
+coef(model)
 
-newdipper=expand.grid(sex=c("Female","Male", "Unknown"))
+# 
+newdipper=expand.grid(sex=c("Female","Male", "Unknown"), midpl1 = 1, midpl2 = 2, midpl3 = 3, midpl4 = 4, midpl5 = 5, midpl6 = 6, midpl7 = 7, midpl8 = 8, midpl9 = 9, midpl10=10, midpl11=11, midpl12=12, midpl13=13, midpl14=14, midpl15=15, midpl16=16, midpl17=17, midpl18=18, midpl19=19, midpl20=20,midpl21=21, midpl22=22, midpl23=23, midpl24=24, midpl25=25, midpl26=26, midpl27=27)
 
 pred = predict(model, newdata = newdipper, se= TRUE)
-
-ggplot(pred$Phi, aes(sex, estimate, ymin=lcl, ymax=ucl))+geom_errorbar(width=0.2) + geom_point()
+pred_phi = pred$Phi[1:18,]
 ```
 
 # Abstract
 
 # Introduction
-** Reptiles are declining globally, the turtles is one of the most threatened species on the planet.**
 
 Algonquin Park is a beautiful place that attracts many tourists to came and enjoyed these wonderful views. At the same time Algonquin park is home to many animal species. Every year starting from 1978 a team of dedicated researchers travel to the Wildlife Research Station in Algonquin Provincial Park, where they live from May to August. The team captured and recaptured the painted turtle then assigned unique notch identification and recorded their size and other statistics. Their goal is to use this long-term dataset to address interesting and timely questions, such as adaptation to northern environments, life-history trade-offs, phenotypic response to climate change, sexual selection, among other topics. However, for our study, we are investigating the relationship between the painted turtles survival rate and its size together with other behaviors. 
 
@@ -129,55 +131,63 @@ In Rest of my report contains methods, which I first explain my data cleaning de
 
 # Methods
 
-## Data Cleaning dicision
-Based on the information provided from our collaborator, that the sex and size variables are likely to have a impact on the survival rate of the painted turtle. So, I have removed unreliable and Irrelevant variables in the dataset and we left with the following remaining 16 variables.
+## Data Cleaning decision
+Based on the information provided from our collaborator, that the sex and size variables are likely to have a impact on the survival rate of the painted turtle. Additionally, midpl was the most reliable measurement for size. Since all the size variable have high correlation, which provide simliar information for our model. I decided to only use midpl in our model to represent the size of painted turtle. After removing the unreliable and Irrelevant variables in the dataset and we left with the following remaining 4 variables. 
+
 
 Variables | Definition
 ------------- | -------------
 notch | Unique individual ID 
-Year | Year that measurements were taken
 sex | Either UNKNOWN (immature individuals can't be sexed) or Male, or Female)
-date | The date of measurement
 site | site that the turtle was captured
-firstcap | Whether or not this is the first time we have ever caught that turtle in the history of the project
-mass | weight of the turtle 
-cl | carapace length (maximum length)
-pl | Plastron Length (maximum length)
-midcl | Carapace length (Measured from between the anterior-most carapacial scutes to between the postior-most carapacial scutes)
 midpl | Plastron length (Measured from between the anterior-most plastral scutes to between the postior-most plastral scutes)
-lclaw | Length of the third nail of the left claw
-rclaw | Length of the third nail of the right claw
-cw | The width of the widest portion of the carapace
-ch | The height of the turtle, measured from the bottom of the plastron to the top of the carapace.
-dead | Whether the turtle was found dead 
 
-
+Furthermore, I noticed some input errors with the sex and mass. For Some observation, the sex variable is recorded as “-”, so I changed these observations to unknown. For the mass variable, there was one observation recorded as -47. However, looking at other size
+variables for this observation, we can see that this is a mature turtle. So its mass must be larger than 47. Thus, I replaced the mass of this turtle with unknown. Lastly, there was 6 observation with missing sex variable. By looking at their size, they are all juveniles and I replaced them with UNKNOW indicating juveniles turtle. 
 
 
 ## Model Selection
 
-Our dataset was obtained using capture and recapture methods. This method cause a high correlation in observations from the same turtle, which made me realized those common statistical models with independent assumption with independent assumpation did not apply to our dataset. Additionally, using generalized mixed effect model did not coverage because there is only around 20 dead turtle observation in our dataset. However, we discovered Cormack-Jolly-Seber (CJS) model might be the most appropriate model to fit our dataset. The CSJ model is capable of estimating the survival and the capture probability of individuals and in a population and identifying factors that affected the survival rate and capture rate using the capture-recapture dataset. Based on those features of the CJS model is the best model in our case. 
+Our dataset was obtained using capture and recapture methods. This method cause a high correlation in observations from the same turtle, which made me realized those common statistical models with independent assumption with independent assumption did not apply to our dataset. Additionally, using generalized mixed effect model did not coverage because there is only around 20 dead turtle observation in our dataset. However, we discovered Cormack-Jolly-Seber (CJS) model might be the most appropriate model to fit our dataset. The CSJ model is capable of estimating the survival and the capture probability of individuals and in a population and identifying time-varying factors that affected the survival rate and capture rate using the capture-recapture dataset. Based on those features of the CJS model is the best model in our case. 
 
-Should I talk about this? --After further investigation, I found that all the size measurements are highly correlation, and putting all of them into a model would cause co-linearity problem. According to our collaborator, the midpl are the most reliable measurement, so I chose to use only midpl in my model to represent the size of the turtle. 
+After comparing various models, I think the model appropriate model is to use midpl as time-varying variable to estimate survival probability and use sex as the static variable to estimate the capture probability. Since we believe that size have an effect on the survival probability and turtles with different sex behave differently in the wild, which have an impact on the capture probability.
 
-After building several model with different covariates, I found that the best model is actually using only sex as static variable for both survival probability and capture probability.
+## Data Manpulation and imputation Process for CJS model 
 
-## Data Manpulation and imputation Process for CJS model -- Do we need this? Size is not in my final model. what do I do.
-For CJS model, it is required to have observations for each turtle every year, but we only have observations from the turtles that is capture on a given year. Therefore, I decided to impute the ...
+For CJS model, it is required to have observations for each turtle every year, but we only have observations from the turtles that is capture on a given year. For the time-varying covariate midpl, I first remove the turtles does not have any midpl value. Then, I imputed the observations before its first capture year with value 0 and I obtained an estimate that every year a turtle grows 0.15CM in midpl using linear regression to impute the years we did not capture the turtle after its first capture.
 
-# 3. Result
+Finally, we generated a capture history for each turtle. Capture history is a string of zeros and ones, where zero indicates the turtle was not capture in that year and 1 indicates the turtle was capture in that year.  
+
+## Model Assuptions Check 
+
+1. Capture probability is the same for all individuals on occasion t.
+2. Survival probability is the same for all individuals on occasion t.
+3. Marks are neither lost nor overlooked and are recorded correctly throughout the study.
+4. Sampling periods are instantaneous and recaptured individuals are released immediately.
+5. Emigration from the study area is permanent.
+6. Individuals are independent from each other.
+7. Captures of the same individual on different occasions are independent.
+
+For 1 and 2, I think we can safely assume that same-sex turtles are equally likely to be capture and survival probability because male turtles, female and unknown(juvenile) turtles have very different behaviors. Male move around more, so they are harder to capture and lower survival probability. Females tend to stay close to their nest and are generally larger, so they are relatively easier to capture and higher survival probability. Juvenile is smaller, so they are harder to capture and much lower survival probability. 
+
+Since we have a reliable notch system, assumption 3 is satisfied. 
+
+Our collaborator said that 90% of the turtles are released within 24 hours, remaining 10% are released right away. So, we may say within 24 hours is acceptable with our assumption.
+
+We may have some problem with the emigration is permanent assumption, because we know that the turtles in our data set immigrate and emigrate to other cite and some of them came back after few years. This assumption may not be satisfied. 
+
+Our collaborator said that we could safely assume each turtle and each capture is independent of each other. 
+
+## Sensitivity to imputation check
+
+# Result
+
 ```{r include=FALSE}
 model$results
 ```
 
 ```{r echo=FALSE}
-coefficient <- c("Phi.(Intercept)","Phi.sexMale","Phi.sexUnknown","p.(Intercept)","p.sexMale","p.sexUnknown")
-Estimate <- c(3.7025814, -0.6943481, -3.4392258, 1.2086133, -0.2454782, -0.5087132)
-se <- c(0.09164597,0.15513322 ,0.13280805	,0.03344518,0.06994550,0.17254081	)
-df <- data.frame(coefficient,Estimate,se )
-df <- df %>% mutate(lcl = Estimate - 2*se, ucl = Estimate + 2*se)
-df <- df %>% mutate(Estimate = round(exp(Estimate),3), lcl = round(exp(lcl),3), ucl = round(exp(ucl),3)) %>% select(-se)
-knitr::kable(df)
+knitr::kable(round(coef(model),3))
 ```
 
 From the above table, we see that the odds ratio between the male turtle and female turtle survival rate is 0.499 with a 95% confidence interval of [0.366, 0.681]. This means the odds of survival rate for male turtle are about 50% lower than the odds of survival rate for female. Furthermore, the odds ratio between the Unknown sex turtle (juvenile) and the female turtle survival rate is 0.032 with a 95% confidence interval of [0.025, 0.042]. This means the odds of survival rate for Unknown sex turtles is 96.8% lower than the odds of survival rate for the female turtle.  
@@ -185,9 +195,8 @@ From the above table, we see that the odds ratio between the male turtle and fem
 Additionally, looking at the capture probability p, we see that male turtle has lower odds than female turtle, and unknown sex turtle has even lower odds ratio. The odds ratio of capture probability between male and female is 0.782 with a 95% confidence interval of [0.680, 0.9]. And the odds ratio of capture probability between unknown sex and female is 0.601 with a 95% confidence interval of [0.426, 0.849]
 
 ```{r echo=FALSE,fig.height=4}
-newdipper=expand.grid(sex=c("Female","Male", "Unknown"))
-pred = predict(model, newdata = newdipper, se= TRUE)
-ggplot(pred$Phi, aes(sex, estimate, ymin=lcl, ymax=ucl))+geom_errorbar(width=0.2) + geom_point() + labs(title = "Painted Turtle Predicted Survival Probability") + ylab("Survival Rate")
+pred_phi %>% ggplot(aes(1:18, estimate, ymin=lcl, ymax=ucl))+geom_errorbar(width=0.2) + geom_point() + labs(title = "Painted Turtle Predicted Survival Probability") + ylab("Survival Rate") + xlab("midpl")
+
 ```
 
 The odds of survival rate for female, male and unknown sex turtle are also reflected on the above plot. We predicted that female turtles have a high survival probability with a small 95% confidence interval. Male turtles have a slightly lower survival rate and slightly wider 95% confidence interval. Lastly, the unknown sex turtle has the lowest survival rate with only around 57%
