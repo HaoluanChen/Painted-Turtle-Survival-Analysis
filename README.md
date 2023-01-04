@@ -1,4 +1,4 @@
-STA490 project: Painted-Turtle-Survival-Analysis 
+# STA490 project: Painted-Turtle-Survival-Analysis 
 
 In this statistical analysis, we aimed to understand the natural survival rate for painted turtles in the
 Algonquin Park. Our data was collected using the capture-recapture method, which would cause a high
